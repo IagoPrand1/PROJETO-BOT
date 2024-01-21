@@ -671,14 +671,14 @@ async def subscribe(url, channels, api_key, passphrase, secret_key,
                             )
 
                             preco_atual = float(response['data'][0]['last'])
-                            acima = 1.004 #em decimal
+                            dif_max = 0.004
                             # Ajustar sl de acordo com o lucro acumulado
                             sl = 0.01 #diferença decimal entre valor presente e valor de venda enviado
                             perda_lucro = 0.4 
                             # Diferença de preço entre o valor presente e o valor de venda desejado
                             dif_preco = (valor_ordem-preco_atual)/preco_atual
 
-                            if compra and preco_atual>valor_ordem*acima and time.time()*1000>time_start+400000:
+                            if compra and dif_preco>dif_max and time.time()*1000>time_start+400000:
                                 print('AJUSTE compra \n')
                                 order_price = preco_atual*(1-desvalorizacao) #preço de compra
                                 buy = USDT/(float(order_price))
@@ -691,7 +691,7 @@ async def subscribe(url, channels, api_key, passphrase, secret_key,
                                         newSz=str(buy),
                                         clOrdId=clOrdId
                                     )
-                                    
+
                                 time_start = time.time()*1000
 
                                 print(f'Ajuste compra: {result}')
