@@ -6,7 +6,6 @@ from scipy.stats import norm
 from keras.models import load_model
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 import okx.MarketData as MarketData
-import schedule
 import time
 from datetime import datetime
 import matplotlib.pyplot as plt
