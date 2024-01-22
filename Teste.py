@@ -710,7 +710,7 @@ async def subscribe(url, channels, api_key, passphrase, secret_key,
 
                                 print(f'Ajuste compra: {result}')
                             # Se tantos porcentos do lucro(perda_lucro) forem maior que a perda gerada pela desvalorização (deveria ser valorização, pois é o ganho que esperava ter) da moeda, então pode vender e resultar em uma perda do lucro acumulado
-                            if not compra and abs(dif_preco)>sl and lucro_acum*perda_lucro>abs(dif_preco):
+                            if not compra and abs(dif_preco)>sl and lucro_acum*perda_lucro>abs(dif_preco)/100:
                                 print('AJUSTE venda \n')
                                 result = tradeAPI.amend_order(
                                     instId=instId,
