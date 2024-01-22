@@ -475,6 +475,8 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
         df_registros = pd.DataFrame(registros)
         df_registros.to_csv(f'Registros {par[:3]}.csv')
 
+        print(df_registros)
+
         # Exibir o número de operações realizadas e o lucro final
         print(f"Número de operações realizadas: {operacao}")
         print(f"Lucro final: {lucro_acumulado:.2f} %")
