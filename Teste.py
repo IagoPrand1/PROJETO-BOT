@@ -475,6 +475,7 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
         df_registros = pd.DataFrame(registros)
         df_registros.to_csv(f'Registros {par[:3]}.csv')
 
+        print("RESULTADO")
         print(df_registros)
 
         # Exibir o número de operações realizadas e o lucro final
@@ -709,7 +710,7 @@ async def subscribe(url, channels, api_key, passphrase, secret_key,
 
                                 print(f'Ajuste compra: {result}')
                             # Se tantos porcentos do lucro(perda_lucro) forem maior que a perda gerada pela desvalorização (deveria ser valorização, pois é o ganho que esperava ter) da moeda, então pode vender e resultar em uma perda do lucro acumulado
-                            if not compra and dif_preco>sl and lucro_acum*perda_lucro>dif_preco:
+                            if not compra and abs(dif_preco)>sl and lucro_acum*perda_lucro>abs(dif_preco):
                                 print('AJUSTE venda \n')
                                 result = tradeAPI.amend_order(
                                     instId=instId,
