@@ -251,11 +251,7 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
     #Parâmetros e variáveis para previsao
     operacao_alta = False #Quando for realizado uma compra esperando alta grande
     valorizacao_alta = 0.004
-    valorizacao_segura = 0.0005 #mais com perda
     desvalorizacao_baixa = 0.005
-    venda_alta = 0
-    venda_prebaixa = 0
-    compra_prealta = 0
 
     api_key = 'c526a733-e865-49bb-96f8-80efea44bc7b'
     secret_key = 'B2E5C73BA075C7B03214B23F7C369BF4'
@@ -265,9 +261,6 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
 
         # pega a data e hora atual em UTC
         inicio = datetime.utcnow()
-
-        # formata no formato desejado
-        formato = "%Y-%m-%d %H:%M:%S"
         
         previsao_direcao = prev_direcao()
         previsao_oscilacao = prev_oscilacao()
@@ -278,7 +271,6 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
             instId=par
         )    
         fee_m = float(taxa['data'][0]['maker'])
-        fee_t = float(taxa['data'][0]['taker'])
 
         #Consultar valor atual
         marketDataAPI =  MarketData.MarketAPI(flag=flag)
@@ -288,7 +280,7 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
         print(response)
 
         # ID da ordem. Terminacao m é compra (maker)
-        clOrdId = str(int(time.time()))+par[:3]+'MM1'
+        clOrdId = str(int(time.time()))+par[:3]+'MM3'
 
         if previsao_oscilacao == 'Grande':
             
@@ -298,7 +290,7 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
                 crip = USDT/(float(order_price)) #quantidade de BTC
                 print('COMPRAR NA BAIXA \n')
                 
-                result = tentativa_compra(par, order_price, crip, clOrdId)        
+                tentativa_compra(par, order_price, crip, clOrdId)        
                 operacao_alta = True
 
                 hora_conclusao = datetime.utcnow()
@@ -334,7 +326,7 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
                 crip = USDT/(float(order_price)) #quantidade de BTC
                 print('COMPRAR PRÉ-ALTA \n')
                 
-                result = tentativa_compra(par, order_price, crip, clOrdId)
+                tentativa_compra(par, order_price, crip, clOrdId)
                 operacao_alta = True
 
                 hora_conclusao = datetime.utcnow()
@@ -370,7 +362,7 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
             crip = USDT/(float(order_price)) #quantidade de BTC
             print('COMPRAR \n')
 
-            result = tentativa_compra(par, order_price, crip, clOrdId) 
+            tentativa_compra(par, order_price, crip, clOrdId) 
 
             hora_conclusao = datetime.utcnow()
             # Registrar a operação de compra
@@ -402,7 +394,7 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
         df_registros = pd.DataFrame(registros)
         df_registros.to_csv(f'Registros {par[:3]}.csv')
 
-        clOrdId = str(int(time.time()))+par[:3]+'MT1' #final um indica que é o primeiro programa 
+        clOrdId = str(int(time.time()))+par[:3]+'MT3' #final um indica que é o primeiro programa 
         
         previsao_direcao = prev_direcao()
         previsao_oscilacao = prev_oscilacao()
@@ -412,7 +404,7 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
             if not operacao_alta: 
 
                 print('VENDER \n')
-                result = tentativa_venda(par, preco_venda, crip_real, clOrdId)
+                tentativa_venda(par, preco_venda, crip_real, clOrdId)
 
                 hora_conclusao = datetime.utcnow()
                 # Registrar a operação de compra
@@ -447,7 +439,7 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
 
                 operacao_alta = False
                 print('VENDER NA ALTA \n')
-                result = tentativa_venda(par, preco_venda, crip_real, clOrdId) 
+                tentativa_venda(par, preco_venda, crip_real, clOrdId) 
 
                 hora_conclusao = datetime.utcnow()
                 # Registrar a operação de compra
@@ -483,7 +475,6 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
         print(f"Lucro final: {lucro_acumulado:.2f} %")
         fim = datetime.utcnow()
         #inicio_data_hora = inicio.strtime(formato)
-        fim_data_hora = fim.strftime(formato)
         print('Inicio:',inicio, '\nFim:', fim, '\nDuração:', fim-inicio)
 
 
@@ -687,7 +678,7 @@ async def subscribe(url, channels, api_key, passphrase, secret_key,
                             preco_atual = float(response['data'][0]['last'])
                             dif_max = 0.004
                             # Ajustar sl de acordo com o lucro acumulado
-                            sl = 0.01 #diferença decimal entre valor presente e valor de venda enviado
+                            sl = 0.008 #diferença decimal entre valor presente e valor de venda enviado
                             perda_lucro = 0.4 
                             # Diferença de preço entre o valor presente e o valor de venda desejado
                             dif_preco = (valor_ordem-preco_atual)/preco_atual
@@ -710,7 +701,7 @@ async def subscribe(url, channels, api_key, passphrase, secret_key,
 
                                 print(f'Ajuste compra: {result}')
                             # Se tantos porcentos do lucro(perda_lucro) forem maior que a perda gerada pela desvalorização (deveria ser valorização, pois é o ganho que esperava ter) da moeda, então pode vender e resultar em uma perda do lucro acumulado
-                            if not compra and abs(dif_preco)>sl and lucro_acum*perda_lucro>abs(dif_preco)/100:
+                            if not compra and dif_preco>sl and (lucro_acum*perda_lucro)/100>dif_preco:
                                 print('AJUSTE venda \n')
                                 result = tradeAPI.amend_order(
                                     instId=instId,
@@ -786,8 +777,8 @@ def verificar_execucao(api_key, passphrase, secret_key, compra, instId, clOrdId,
 
 USDT = 10
 valor_inicial = USDT
-desvalorizacao = 0.0018
-valorizacao = 0.00186
+desvalorizacao = 0.00188
+valorizacao = 0.0018
 
 par = 'BTC-USDT'
 
