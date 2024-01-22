@@ -142,9 +142,6 @@ def previsao():
     
     df_previsao.to_csv('BTC-menos-valorizacao-Previsao_com_oscilacao.csv', index=False)
 
-    timer = threading.Timer(300, previsao) #segundos
-    timer.start()
-
     return df_previsao
 
 
@@ -212,8 +209,31 @@ def tentativa_venda(instId, px, sz, clOrdI):
     return result
 
 
+def prev_direcao():
+    
+    df_previsao = previsao()
 
+    prev = df_previsao['Direcao'].tail(1)
+    
+    #Resetar os indexadores para não dá problema 
+    prev.reset_index(inplace=True, drop=True)
 
+    prev = prev.iloc[0][0]
+
+    return prev
+
+def prev_oscilacao():
+    
+    df_previsao = previsao()
+
+    prev = df_previsao['Oscilacao'].tail(1)
+    
+    #Resetar os indexadores para não dá problema 
+    prev.reset_index(inplace=True, drop=True)
+
+    prev = prev.iloc[0][0]
+
+    return prev
 
 def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ): 
 
@@ -241,8 +261,6 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
     secret_key = 'B2E5C73BA075C7B03214B23F7C369BF4'
     passphrase = 'Par@negociar1'
 
-    previsao()
-
     while True:
 
         # pega a data e hora atual em UTC
@@ -251,17 +269,8 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
         # formata no formato desejado
         formato = "%Y-%m-%d %H:%M:%S"
         
-        df_previsao = pd.read_csv('BTC-menos-valorizacao-Previsao_com_oscilacao.csv')
-
-        previsao_direcao = df_previsao['Direcao'].tail(1)
-        previsao_oscilacao = df_previsao['Oscilacao'].tail(1)
-
-        #Resetar os indexadores para não dá problema 
-        previsao_direcao.reset_index(inplace=True, drop=True)
-        previsao_oscilacao.reset_index(inplace=True, drop=True)
-
-        previsao_direcao = previsao_direcao[0]
-        previsao_oscilacao = previsao_oscilacao[0]
+        previsao_direcao = prev_direcao()
+        previsao_oscilacao = prev_oscilacao()
 
         #Consultar taxas de maker (comprador) e taker (vendedor)
         taxa = accountAPI.get_fee_rates(
@@ -395,6 +404,9 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
 
         clOrdId = str(int(time.time()))+par[:3]+'MT1' #final um indica que é o primeiro programa 
         
+        previsao_direcao = prev_direcao()
+        previsao_oscilacao = prev_oscilacao()
+
         if not compra:
             
             if not operacao_alta: 
