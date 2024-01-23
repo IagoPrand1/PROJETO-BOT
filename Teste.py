@@ -1,3 +1,6 @@
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+
 # Bot
 import pandas as pd
 import numpy as np
@@ -299,7 +302,8 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
 
                 # Criar um dataframe com os registros das operações
                 df_registros = pd.DataFrame(registros)
-                df_registros.to_csv(f'Registros {par[:3]}.csv')
+                upload(df_registros, par)
+                #df_registros.to_csv(f'Registros {par[:3]}.csv')
 
                 trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, order_price, desvalorizacao, USDT, preco_venda, crip_real, lucro_acumulado)
                 compra = False
@@ -335,7 +339,8 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
                 
                 # Criar um dataframe com os registros das operações
                 df_registros = pd.DataFrame(registros)
-                df_registros.to_csv(f'Registros {par[:3]}.csv')
+                upload(df_registros, par)
+                #df_registros.to_csv(f'Registros {par[:3]}.csv')
 
                 trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, order_price, desvalorizacao, USDT, preco_venda, crip_real, lucro_acumulado)
                 compra = False    
@@ -370,7 +375,8 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
 
             # Criar um dataframe com os registros das operações
             df_registros = pd.DataFrame(registros)
-            df_registros.to_csv(f'Registros {par[:3]}.csv')
+            upload(df_registros, par)
+            #df_registros.to_csv(f'Registros {par[:3]}.csv')
         
             trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, order_price, desvalorizacao, USDT, preco_venda, crip_real, lucro_acumulado)
             compra = False
@@ -390,9 +396,10 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
             # Registrar a operação de compra
             registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": "Compra", "Status": 'Fechado', "Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado})
 
-        # Criar um dataframe com os registros das operações
-        df_registros = pd.DataFrame(registros)
-        df_registros.to_csv(f'Registros {par[:3]}.csv')
+            # Criar um dataframe com os registros das operações
+            df_registros = pd.DataFrame(registros)
+            upload(df_registros, par)
+            #df_registros.to_csv(f'Registros {par[:3]}.csv')
 
         clOrdId = str(int(time.time()))+par[:3]+'MT3' #final um indica que é o primeiro programa 
         
@@ -415,7 +422,8 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
                 
                 # Criar um dataframe com os registros das operações
                 df_registros = pd.DataFrame(registros)
-                df_registros.to_csv(f'Registros {par[:3]}.csv')
+                upload(df_registros, par)
+                #df_registros.to_csv(f'Registros {par[:3]}.csv')
 
                 trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, order_price, desvalorizacao, USDT, preco_venda, crip_real, lucro_acumulado)
                 compra = True 
@@ -444,9 +452,11 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
                 hora_conclusao = datetime.utcnow()
                 # Registrar a operação de compra
                 registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": "Venda em alta", "Status": 'Aberto',"Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado})
+                
                 # Criar um dataframe com os registros das operações
                 df_registros = pd.DataFrame(registros)
-                df_registros.to_csv(f'Registros {par[:3]}.csv')
+                upload(df_registros, par)
+                #df_registros.to_csv(f'Registros {par[:3]}.csv')
 
                 trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, order_price, desvalorizacao, USDT, preco_venda, crip_real, lucro_acumulado)
                 compra = True
@@ -465,7 +475,8 @@ def bot(par, USDT,valor_inicial, desvalorizacao, valorizacao ):
 
         # Criar um dataframe com os registros das operações
         df_registros = pd.DataFrame(registros)
-        df_registros.to_csv(f'Registros {par[:3]}.csv')
+        upload(df_registros, par)
+        #df_registros.to_csv(f'Registros {par[:3]}.csv')
 
         print("RESULTADO")
         print(df_registros)
@@ -774,6 +785,14 @@ def verificar_execucao(api_key, passphrase, secret_key, compra, instId, clOrdId,
     #loop.close()
         
     return response['data'][0]
+
+def upload(df, par): 
+
+    google_auth = GoogleAuth()
+    drive_app = GoogleDrive(google_auth)
+    file = drive_app.CreateFile({'parents': [{'id': '1ID-LrppXN1T7qtxG1dw1njWw0B6RGNs-'}], 'title': f'Registros {par[:3]}.csv', 'mimeType': 'text/csv'})
+    file.SetContentString(df.to_csv(index=False)) # define o conteúdo do arquivo com uma string CSV
+    file.Upload()
 
 USDT = 10
 valor_inicial = USDT
