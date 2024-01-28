@@ -876,7 +876,7 @@ def verificar_execucao(api_key, passphrase, secret_key, compra, instId, clOrdId,
                 #print('\n RESPOSTA \n')
                 resp = json.loads(response)
                 response = resp
-                #print('\n', response['data'])
+                print('\n', response['data'])
         except (TypeError, KeyError, IndexError) as e:
             print('Erro')
             print(response)
