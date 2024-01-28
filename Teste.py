@@ -32,7 +32,7 @@ tradeAPI = Trade.TradeAPI(api_key, secret_key, passphrase, False, flag)
 
 # Criar o app Flask
 app = Flask(__name__)
-
+@app.route("/")
 def subir(df, nome):
 
     # Salvar o dataframe como um arquivo html
@@ -51,13 +51,11 @@ def subir(df, nome):
     </html>
     """.format(html, nome)
 
-    # Criar uma rota no Flask que renderize o template HTML
-    @app.route("/")
-    def dataframe():
-        return template
+    # Criar uma rota no Flask que renderize o template HTML 
 
-    return
+    return template
 
+@app.route("/reportprev")
 def subir_reportprev(df, nome):
 
     # Salvar o dataframe como um arquivo html
@@ -77,11 +75,8 @@ def subir_reportprev(df, nome):
     """.format(html, nome)
 
     # Criar uma rota no Flask que renderize o template HTML
-    @app.route("/reportprev")
-    def dataframe():
-        return template_prev
 
-    return
+    return template_prev
 
 def calcular_indicadores_estatisticos(df):
 
@@ -210,8 +205,7 @@ def ordem_compra(instId, px, sz, clOrdI):
         sz=str(sz),
         clOrdId=clOrdI # you can define your own client defined order ID
     )
-    
-    
+        
     return result
 
 def ordem_venda(instId, px, sz, clOrdI): #
@@ -225,8 +219,7 @@ def ordem_venda(instId, px, sz, clOrdI): #
         sz=str(sz),
         clOrdId=clOrdI # you can define your own client defined order ID
     )
-    
-        
+            
     return result
 
 def tentativa_compra(instId, px, sz, clOrdI):
