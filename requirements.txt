@@ -22,7 +22,6 @@ trio==0.22.0
 trio-websocket==0.10.2
 ujson==5.7.0
 websockets==10.4
-zipp==3.17.0
-os 
+zipp==3.17.0 
 
 
