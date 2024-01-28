@@ -283,17 +283,22 @@ def avaliar_previsoes(df_resultado):
     especificidade = TN / (TN + FP)
 
     # Ler o arquivo csv e armazenar em uma variável
-    df_original = pd.read_csv('Report_de_desempenho_das_previsoes.csv')
+    #df_original = pd.read_csv('Report_de_desempenho_das_previsoes.csv')
 
-    linha = len(df_original)
-    df_original.at[linha,'Time'] = time.time()
-    df_original.at[linha,'Acuracia_(%)'] = round(accuracy * 100, 2)
-    df_original.at[linha,'Sensibilidade_(%)'] = round(recall * 100, 2)
-    df_original.at[linha,'Especificidade_(%)'] = round(especificidade * 100, 2)
-    df_original.at[linha,'AUC'] = round(roc_auc, 2)
+    #linha = len(df_original)
+    #df_original.at[linha,'Time'] = time.time()
+    #df_original.at[linha,'Acuracia_(%)'] = round(accuracy * 100, 2)
+    #df_original.at[linha,'Sensibilidade_(%)'] = round(recall * 100, 2)
+    #df_original.at[linha,'Especificidade_(%)'] = round(especificidade * 100, 2)
+    #df_original.at[linha,'AUC'] = round(roc_auc, 2)
 
     # Salvar o novo dataframe em um arquivo csv
-    df_original.to_csv('Report_de_desempenho_das_previsoes.csv', index=False)
+    #df_original.to_csv('Report_de_desempenho_das_previsoes.csv', index=False)
+
+    print(f'Acurácia do modelo: {accuracy * 100:.2f}%')
+    print(f'Sensibilidade (Recall): {recall * 100:.2f}%')
+    print(f'Especificidade: {especificidade * 100:.2f}%')
+    print(f'AUC (Área sob a Curva ROC): {roc_auc:.4f}')
 
 # Chamando a função de atualização a cada 10 segundos
 
@@ -882,7 +887,7 @@ valorizacao = 0.008
 
 par = 'SOL-USDT'
 
-df_desempenho = pd.DataFrame(columns=["Time","Acuracia_(%)","Sensibilidade_(%)","Especificidade_(%)", "AUC"], index=None)
-df_desempenho.to_csv(f'{par}-Report_de_desempenho_das_previsoes.csv', index=False)
+#df_desempenho = pd.DataFrame(columns=["Time","Acuracia_(%)","Sensibilidade_(%)","Especificidade_(%)", "AUC"], index=None)
+#df_desempenho.to_csv(f'{par}-Report_de_desempenho_das_previsoes.csv', index=False)
 
 bot(par, USDT, desvalorizacao, valorizacao )
