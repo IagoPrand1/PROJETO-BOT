@@ -21,8 +21,7 @@ import requests
 import hmac
 import base64
 import zlib
-import webbrowser
-import os
+from flask import Flask
 
 api_key = 'c526a733-e865-49bb-96f8-80efea44bc7b'
 secret_key = 'B2E5C73BA075C7B03214B23F7C369BF4'
@@ -31,17 +30,56 @@ flag = "1"  # live trading: 0, demo trading: 1
 accountAPI = Account.AccountAPI(api_key, secret_key, passphrase, False, flag) #Para acessar dados do fundo e configurações da conta
 tradeAPI = Trade.TradeAPI(api_key, secret_key, passphrase, False, flag)
 
+# Criar o app Flask
+app = Flask(__name__)
+
 def subir(df, nome):
 
     # Salvar o dataframe como um arquivo html
-    df.to_html(f"{nome}.html", index=False)
+    html = df.to_html(index=False)
 
-    # Criar um link para o arquivo html usando o caminho absoluto
-    link = "file://" + os.path.abspath(f"{nome}.html")
-    print(link)
+    # Criar um template HTML que inclua o dataframe
+    template = """
+    <html>
+    <head>
+    <title>Dataframe</title>
+    </head>
+    <body>
+    <h1>{1}</h1>
+    {0}
+    </body>
+    </html>
+    """.format(html, nome)
 
-    # Abrir o link no navegador padrão
-    #webbrowser.open(link)
+    # Criar uma rota no Flask que renderize o template HTML
+    @app.route("/")
+    def dataframe():
+        return template
+
+    return
+
+def subir_reportprev(df, nome):
+
+    # Salvar o dataframe como um arquivo html
+    html = df.to_html(index=False)
+
+    # Criar um template HTML que inclua o dataframe
+    template_prev = """
+    <html>
+    <head>
+    <title>Dataframe</title>
+    </head>
+    <body>
+    <h1>{1}</h1>
+    {0}
+    </body>
+    </html>
+    """.format(html, nome)
+
+    # Criar uma rota no Flask que renderize o template HTML
+    @app.route("/reportprev")
+    def dataframe():
+        return template_prev
 
     return
 
@@ -310,7 +348,7 @@ def avaliar_previsoes(df_resultado):
 
     # Salvar o novo dataframe em um arquivo csv
     df_original.to_csv('Report_de_desempenho_das_previsoes.csv', index=False)
-    subir(df_original, "Report_de_desempenho_das_previsoes")
+    subir_reportprev(df_original, "Report_de_desempenho_das_previsoes")
 
 # Chamando a função de atualização a cada 10 segundos
 
@@ -906,3 +944,7 @@ df_desempenho = pd.DataFrame(columns=["Time","Acuracia_(%)","Sensibilidade_(%)",
 df_desempenho.to_csv('Report_de_desempenho_das_previsoes.csv', index=False)
 
 bot(par, USDT, desvalorizacao, valorizacao )
+
+# Colocar o site no ar
+if __name__ == "__main__":
+    app.run(debug=True)
