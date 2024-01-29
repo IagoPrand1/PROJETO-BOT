@@ -775,10 +775,10 @@ async def subscribe(url, channels, api_key, passphrase, secret_key,
                     dif_max = 0.0031
                     # Ajustar sl de acordo com o lucro acumulado
                     sl = 0.008 #diferença decimal entre valor presente e valor de venda enviado
-                    perda_lucro = 0.8 
-                    # Diferença de preço entre o valor presente e o valor de venda desejado
+                    perda_lucro = 0.7 
+                    # Diferença de preço entre o valor venda desejado e o valor de atual
                     dif_preco = (valor_ordem-preco_atual)/preco_atual
-                    print(time.time()>time_start+600, time.time(), time.time()>time_start+600)
+                    #print(time.time()>time_start+600, time.time(), time.time()>time_start+600)
                     
                     if compra and abs(dif_preco)>dif_max and time.time()>time_start+600:
                         #print('AJUSTE compra \n')
@@ -791,7 +791,7 @@ async def subscribe(url, channels, api_key, passphrase, secret_key,
                             print(result)
 
                             if result['data'][0]['sMsg'] == 'Your order has already been filled or canceled':
-                                response = segunda_verificacao(instId,clOrdId)
+                                response = segunda_verificacao(tradeAPI, instId,clOrdId)
                                 return response['data'][0]
 
                         time_start = time.time()
@@ -882,10 +882,12 @@ def verificar_execucao(api_key, passphrase, secret_key, compra, instId, clOrdId,
     return response
 
 USDT = 10
-desvalorizacao = 0.005
-valorizacao = 0.008
+desvalorizacao = 0.006
+valorizacao = 0.009
 
-par = 'SOL-USDT'
+par = 'SUI-USDT'
+
+print('USDT', USDT, '\n Desvalorização', desvalorizacao, '\n Valorização', valorizacao,'\n')
 
 #df_desempenho = pd.DataFrame(columns=["Time","Acuracia_(%)","Sensibilidade_(%)","Especificidade_(%)", "AUC"], index=None)
 #df_desempenho.to_csv(f'{par}-Report_de_desempenho_das_previsoes.csv', index=False)
