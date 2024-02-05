@@ -414,7 +414,7 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
             df_registros = pd.DataFrame(registros)
             df_registros.to_csv(f'Registros {par[:3]}.csv')
 
-            trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, order_price, desvalorizacao_usada, valorizacao_usada, USDT, valorizacao_usada, crip_real, lucro_acumulado)
+            trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, order_price, desvalorizacao_usada, USDT, valorizacao_usada, crip_real, lucro_acumulado)
             compra = False
             print(trade)      
 
@@ -458,7 +458,7 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
             df_registros = pd.DataFrame(registros)
             df_registros.to_csv(f'Registros {par[:3]}.csv')
             
-            trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, order_price, desvalorizacao_usada, valorizacao_usada, USDT, valorizacao_usada, crip_real, lucro_acumulado)
+            trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, order_price, desvalorizacao_usada, USDT, valorizacao_usada, crip_real, lucro_acumulado)
             compra = True
             
             preco_venda_real = float(trade['avgPx'])
