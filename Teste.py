@@ -24,6 +24,8 @@ import zlib
 import webbrowser
 import os
 
+import httpx
+
 api_key = 'c526a733-e865-49bb-96f8-80efea44bc7b'
 secret_key = 'B2E5C73BA075C7B03214B23F7C369BF4'
 passphrase = 'Par@negociar1'
@@ -208,9 +210,9 @@ def tentativa_venda(instId, px, sz, clOrdI):
     return result
 
 
-def prev_direcao(df_previsao):
+def prev_direcao(df_previsao, coluna):
 
-    prev = df_previsao['Direcao'].tail(1)
+    prev = df_previsao[coluna].tail(1)
     
     #Resetar os indexadores para não dá problema 
     prev.reset_index(inplace=True, drop=True)
@@ -219,14 +221,14 @@ def prev_direcao(df_previsao):
 
     return prev
 
-def prev_oscilacao(df_previsao):
+def coleta_registros(df_previsao, coluna):
 
-    prev = df_previsao['Oscilacao'].tail(1)
+    prev = df_previsao[coluna].tail(1)
     
     #Resetar os indexadores para não dá problema 
     prev.reset_index(inplace=True, drop=True)
 
-    prev = prev.iloc[0, 0]
+    prev = prev.iloc[0]
 
     return prev
 
@@ -307,8 +309,8 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
     # Inicializar as variáveis de controle
     compra = True # Indica se há uma operação de compra em andamento
     lucro = 0 # Lucro 
-    lucro_acumulado = 0
-    operacao = 0 # Número de operações realizadas
+    lucro_acumulado = 1
+    contagem = 0 # Número de operações realizadas
     registros = [] # Lista de registros das operações
     preco_venda_real = 0
     preco_compra = 0
@@ -318,22 +320,39 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
 
     #Parâmetros e variáveis para previsao
     operacao_alta = False #Quando for realizado uma compra esperando alta grande
-    valorizacao_alta = 0.004
+    valorizacao_alta = valorizacao*2
     desvalorizacao_baixa = 0.02
+
+    #registros_pass = pd.read_csv(f'Registros {par[:3]}.csv')
+    #lucro_acumulado = coleta_registros(registros_pass, 'Lucro Acum.(%)')
+    #USDT = coleta_registros(registros_pass, 'USDT')
+
+    #operacao = coleta_registros(registros_pass, 'Operação')
+    #if operacao == "Venda":
+        #compra = False
 
     api_key = 'c526a733-e865-49bb-96f8-80efea44bc7b'
     secret_key = 'B2E5C73BA075C7B03214B23F7C369BF4'
     passphrase = 'Par@negociar1'
 
+    livro_retorno = []
+
     while True:
+
+        #if lucro_acumulado >= 6.0:
+         #   retorno = USDT - valor_inicial
+          #  livro_retorno.append({"Retorno": retorno})
+           # df_livro_retorno = pd.DataFrame(livro_retorno)
+            #df_livro_retorno.to_csv(f'Retorno {par[:3]}.csv')
+            #USDT = valor_inicial
          
         df_previsao = previsao(par)
 
         # pega a data e hora atual em UTC
         inicio = datetime.utcnow()
         
-        previsao_direcao = prev_direcao(df_previsao)
-        previsao_oscilacao = prev_oscilacao(df_previsao)
+        previsao_direcao = prev_direcao(df_previsao, 'Direcao')
+        previsao_oscilacao = prev_direcao(df_previsao, 'Oscilacao')
         grafico_realprevisao(df_previsao)
         avaliar_previsoes(df_previsao)
 
@@ -352,193 +371,110 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
         print(response)
 
         # ID da ordem. Terminacao m é compra (maker)
-        clOrdId = str(int(time.time()))+par[:3]+'MM3'
+        clOrdId = str(int(time.time()))+par[:3]+'MM'
 
-        if previsao_oscilacao == 'Grande':
+        if compra:
             
-            if compra and previsao_direcao == 'Baixa':
-                
-                order_price = float(response['data'][0]['last'])*(1-desvalorizacao_baixa) #preço de compra
-                crip = USDT/(float(order_price)) #quantidade de BTC
-                print('COMPRAR NA BAIXA \n')
-                
-                tentativa_compra(par, order_price, crip, clOrdId)        
-                operacao_alta = True
+            if previsao_direcao == 'Baixa' and previsao_oscilacao == 'Grande':
 
-                hora_conclusao = datetime.utcnow()
-                # Registrar a operação de compra
-                registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": "Compra na baixa", "Status": 'Aberto', "Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado})
+                desvalorizacao_usada = desvalorizacao_baixa
+                valorizacao_usada = valorizacao_alta
 
-                # Criar um dataframe com os registros das operações
-                df_registros = pd.DataFrame(registros)
-                df_registros.to_csv(f'Registros {par[:3]}.csv')
+                tipo_venda = "Venda na alta"
+                tipo_compra = "Compra na baixa"
 
-                trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, order_price, desvalorizacao, USDT, preco_venda, crip_real, lucro_acumulado)
-                compra = False
-                print(trade)
-                
-                operacao += 1
+   
+            elif previsao_direcao == 'Alta' and previsao_oscilacao == 'Grande':
 
-                #Verificar a que preço foi comprado
-                preco_compra = float(trade['avgPx'])
-                preco_venda = preco_compra*(1+valorizacao_alta)    
+                desvalorizacao_usada = desvalorizacao
+                valorizacao_usada = valorizacao_alta
 
-                # O quanto tenho da moeda ao descontar as taxas
-                crip = float(trade['sz'])  
-                USDT = crip*preco_compra*(1-fee_m)
-                crip_real = crip*(1+fee_m)
-                
-                hora_conclusao = datetime.utcnow()
-                # Registrar a operação de compra
-                registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": "Compra na baixa", "Status": 'Fechado', "Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado})
+                tipo_venda = "Venda na alta"
+                tipo_compra = "Compra"
 
-            if compra and previsao_direcao == 'Alta':
+            else: 
+                desvalorizacao_usada = desvalorizacao
+                valorizacao_usada = valorizacao
 
-                order_price = float(response['data'][0]['last'])*(1-desvalorizacao) #preço de compra
-                crip = USDT/(float(order_price)) #quantidade de BTC
-                print('COMPRAR PRÉ-ALTA \n')
-                
-                tentativa_compra(par, order_price, crip, clOrdId)
-                operacao_alta = True
+                tipo_venda = "Venda"
+                tipo_compra = "Compra"
 
-                hora_conclusao = datetime.utcnow()
-                # Registrar a operação de compra
-                registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": "Compra pré-alta", "Status": 'Aberto', "Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado})
-                
-                # Criar um dataframe com os registros das operações
-                df_registros = pd.DataFrame(registros)
-                df_registros.to_csv(f'Registros {par[:3]}.csv')
-
-                trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, order_price, desvalorizacao, USDT, preco_venda, crip_real, lucro_acumulado)
-                compra = False    
-                print(trade)
-
-                operacao += 1
-
-                #Verificar a que preço foi comprado
-                preco_compra = float(trade['avgPx'])
-                preco_venda = preco_compra*(1+valorizacao_alta)    
-
-                # O quanto tenho da moeda ao descontar as taxas
-                crip = float(trade['sz'])  
-                USDT = crip*preco_compra*(1-fee_m)
-                crip_real = crip*(1+fee_m)
-                
-                hora_conclusao = datetime.utcnow()
-                # Registrar a operação de compra
-                registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": "Compra pré-alta", "Status":'Fechado' ,"Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado})
-
-        # Verificar se há uma condição de compra
-        elif compra:
-
-            order_price = float(response['data'][0]['last'])*(1-desvalorizacao) #preço de compra
+            order_price = float(response['data'][0]['last'])*(1-desvalorizacao_usada) #preço de compra
             crip = USDT/(float(order_price)) #quantidade de BTC
-            print('COMPRAR \n')
-
-            tentativa_compra(par, order_price, crip, clOrdId) 
+            print('COMPRAR')
+            
+            tentativa_compra(par, order_price, crip, clOrdId)        
+            #operacao_alta = True
 
             hora_conclusao = datetime.utcnow()
             # Registrar a operação de compra
-            registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": "Compra", "Status": 'Aberto', "Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado})
+            registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": tipo_compra, "Status": 'Aberto', "Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado})
 
             # Criar um dataframe com os registros das operações
             df_registros = pd.DataFrame(registros)
             df_registros.to_csv(f'Registros {par[:3]}.csv')
 
-            trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, order_price, desvalorizacao, USDT, preco_venda, crip_real, lucro_acumulado)
+            trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, order_price, desvalorizacao, USDT, valorizacao, crip_real, lucro_acumulado)
             compra = False
-            print(trade)
-            
-            operacao += 1
+            print(trade)      
 
             #Verificar a que preço foi comprado
             preco_compra = float(trade['avgPx'])
-            preco_venda = preco_compra*(1+valorizacao)    
+            preco_venda = preco_compra*(1+valorizacao_usada)    
 
             # O quanto tenho da moeda ao descontar as taxas
-            btc = float(trade['sz'])  
-            USDT = btc*preco_compra
-            crip_real = btc*(1+fee_m)
+            crip = float(trade['sz'])  
+            USDT = crip*preco_compra*(1-fee_m)
+            crip_real = crip*(1+fee_m)
             
             hora_conclusao = datetime.utcnow()
             # Registrar a operação de compra
-            registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": "Compra", "Status": 'Fechado', "Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado})
+            registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": tipo_compra, "Status": 'Fechado', "Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado})
+        
+        contagem += 1
 
         # Criar um dataframe com os registros das operações
         df_registros = pd.DataFrame(registros)
         df_registros.to_csv(f'Registros {par[:3]}.csv')
 
-        clOrdId = str(int(time.time()))+par[:3]+'MT3' #final um indica que é o primeiro programa 
+        clOrdId = str(int(time.time()))+par[:3]+'MT' #final um indica que é o primeiro programa 
         
         df_previsao = previsao(par)
-        previsao_direcao = prev_direcao(df_previsao)
-        previsao_oscilacao = prev_oscilacao(df_previsao)
+        previsao_direcao = prev_direcao(df_previsao, 'Direcao')
+        previsao_oscilacao = prev_direcao(df_previsao, 'Oscilacao')
         grafico_realprevisao(df_previsao)
         avaliar_previsoes(df_previsao)
 
         if not compra:
+                
+            #operacao_alta = False
+            #print('VENDER NA ALTA \n')
+            tentativa_venda(par, preco_venda, crip_real, clOrdId) 
+
+            hora_conclusao = datetime.utcnow()
+            # Registrar a operação de compra
+            registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": tipo_venda, "Status": 'Aberto',"Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado})
+            # Criar um dataframe com os registros das operações
+            df_registros = pd.DataFrame(registros)
+            df_registros.to_csv(f'Registros {par[:3]}.csv')
             
-            if not operacao_alta: 
-
-                print('VENDER \n')
-                tentativa_venda(par, preco_venda, crip_real, clOrdId)
-
-                hora_conclusao = datetime.utcnow()
-                # Registrar a operação de compra
-                registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": "Venda", "Status": 'Aberto',"Preço de compra": preco_compra, 
-                                "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, 
-                                "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado
-                    })
-                
-                # Criar um dataframe com os registros das operações
-                df_registros = pd.DataFrame(registros)
-                df_registros.to_csv(f'Registros {par[:3]}.csv')
-
-                trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, order_price, desvalorizacao, USDT, preco_venda, crip_real, lucro_acumulado)
-                compra = True 
-                
-                preco_venda_real = float(trade['avgPx'])
-                qtd_vendida = float(trade['sz'])
-                USDT_final = preco_venda_real*qtd_vendida
-                lucro = (USDT_final-USDT)/USDT*100
-                lucro_acumulado = (USDT_final - valor_inicial)/valor_inicial*100
-                USDT = USDT_final
-                crip_real = crip_real-qtd_vendida
-                
-                hora_conclusao = datetime.utcnow()
-                # Registrar a operação de compra
-                registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": "Venda", "Status": 'Fechado',"Preço de compra": preco_compra, 
-                                "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, 
-                                "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado
-                    })
-                
-            else:
-
-                operacao_alta = False
-                print('VENDER NA ALTA \n')
-                tentativa_venda(par, preco_venda, crip_real, clOrdId) 
-
-                hora_conclusao = datetime.utcnow()
-                # Registrar a operação de compra
-                registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": "Venda em alta", "Status": 'Aberto',"Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado})
-                # Criar um dataframe com os registros das operações
-                df_registros = pd.DataFrame(registros)
-                df_registros.to_csv(f'Registros {par[:3]}.csv')
-                
-                trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, order_price, desvalorizacao, USDT, preco_venda, crip_real, lucro_acumulado)
-                compra = True
-                
-                preco_venda_real = float(trade['avgPx'])
-                qtd_vendida = float(trade['sz'])
-                USDT_final = preco_venda_real*qtd_vendida
-                lucro = (USDT_final-USDT)/USDT*100
-                lucro_acumulado = (USDT_final - valor_inicial)/valor_inicial*100
-                USDT = USDT_final
-                crip_real = crip_real-qtd_vendida
-                
-                hora_conclusao = datetime.utcnow()
-                # Registrar a operação de compra
-                registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": "Venda em alta", "Status": 'Fechado',"Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado})
+            trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, order_price, desvalorizacao, USDT, valorizacao, crip_real, lucro_acumulado)
+            compra = True
+            
+            preco_venda_real = float(trade['avgPx'])
+            print(preco_venda_real)
+            qtd_vendida = float(trade['sz'])
+            print(qtd_vendida)
+            USDT_final = preco_venda_real*qtd_vendida
+            print(USDT_final, USDT)
+            lucro = (USDT_final-USDT)/USDT*100
+            lucro_acumulado = (USDT_final - valor_inicial)/valor_inicial*100
+            USDT = USDT_final
+            crip_real = crip_real-qtd_vendida
+            
+            hora_conclusao = datetime.utcnow()
+            # Registrar a operação de compra
+            registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": tipo_venda, "Status": 'Fechado',"Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado})
 
         # Criar um dataframe com os registros das operações
         df_registros = pd.DataFrame(registros)
@@ -548,7 +484,7 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
         print(df_registros)
 
         # Exibir o número de operações realizadas e o lucro final
-        print(f"Número de operações realizadas: {operacao}")
+        print(f"Número de operações realizadas: {contagem}")
         print(f"Lucro final: {lucro_acumulado:.2f} %")
         fim = datetime.utcnow()
         #inicio_data_hora = inicio.strtime(formato)
@@ -715,11 +651,25 @@ def change(num_old):
     return out
 
 def segunda_verificacao(tradeAPI, instId, clOrdId):
-    response = tradeAPI.get_order(
-        instId=instId,
-        clOrdId=clOrdId
-    )
+    response = None
+    # repete a chamada da função até que o resultado seja "0" ou o tempo limite seja atingido
+    while response is None or response["code"] != "0":
+        # chama a função comando_negociacao
+        response = tradeAPI.get_order(
+            instId=instId,
+            clOrdId=clOrdId
+        )
+        # verifica se o resultado foi "0"
+        if response["code"] == "0":
+            continue
+            # imprime a mensagem de sucesso
+            #print("Successful order request，order_id = ",response["data"][0]["clOrdId"])
+        else:
+            # imprime a mensagem de erro
+            print(response)
+        time.sleep(1)
     return response
+
 
 def ajuste(tradeAPI, instId, order_price, buy, clOrdId):
     
@@ -734,119 +684,167 @@ def ajuste(tradeAPI, instId, order_price, buy, clOrdId):
 async def subscribe(url, channels, api_key, passphrase, secret_key, 
                     compra, instId, clOrdId, 
                     valor_ordem, desvalorizacao, USDT, 
-                    preco_venda, sz, lucro_acum
+                    valorizacao, sz, lucro_acum
                     ):
     
     time_start = int(clOrdId[:-6])
     time_startback = time.time()
     trocou = False
 
+    dados = []
+
     while True:
-        #try:
-        async with websockets.connect(url) as ws:
-            # login
-            timestamp = str(get_local_timestamp())
-            login_str = login_params(timestamp, api_key, passphrase, secret_key)
-            await ws.send(login_str)
-            # print(f"send: {login_str}")
-            res = await ws.recv()
-            print(res)
+        try:
+            async with websockets.connect(url) as ws:
+                # login
+                timestamp = str(get_local_timestamp())
+                login_str = login_params(timestamp, api_key, passphrase, secret_key)
+                await ws.send(login_str)
+                # print(f"send: {login_str}")
+                res = await ws.recv()
+                print(res)
 
-            # subscribe
-            sub_param = {"op": "subscribe", "args": channels}
-            sub_str = json.dumps(sub_param)
-            await ws.send(sub_str)
-            print(f"send: {sub_str}")
-            cont = 0
-            
-            while True:
-                try:
-                    res = await asyncio.wait_for(ws.recv(), timeout=25)
-                    
-                except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed) as e:
-                    
-                    tradeAPI = Trade.TradeAPI(api_key, secret_key, passphrase, False, flag)
-                    marketDataAPI =  MarketData.MarketAPI(flag='1')
-                    response = marketDataAPI.get_ticker(
-                        instId=instId
-                    )
-                    preco_atual = float(response['data'][0]['last'])
-                    
-                    dif_max = 0.0031
-                    # Ajustar sl de acordo com o lucro acumulado
-                    sl = 0.008 #diferença decimal entre valor presente e valor de venda enviado
-                    perda_lucro = 0.7 
-                    # Diferença de preço entre o valor venda desejado e o valor de atual
-                    dif_preco = (valor_ordem-preco_atual)/preco_atual
-                    #print(time.time()>time_start+600, time.time(), time.time()>time_start+600)
-                    
-                    if compra and abs(dif_preco)>dif_max and time.time()>time_start+600:
-                        #print('AJUSTE compra \n')
-                        order_price = preco_atual*(1-desvalorizacao) #preço de compra
-                        buy = USDT/(float(order_price))
-                        #print(order_price>valor_ordem, order_price, valor_ordem)
-                        if order_price>valor_ordem:
-                            #print(f'Ajuste compra: {result}')
-                            result = ajuste(tradeAPI, instId, order_price, buy, clOrdId)
-                            print(result)
-
-                            if result['data'][0]['sMsg'] == 'Your order has already been filled or canceled':
-                                response = segunda_verificacao(tradeAPI, instId,clOrdId)
-                                return response['data'][0]
-
-                        time_start = time.time()
-
-                    # Se tantos porcentos do lucro(perda_lucro) forem maior que a perda gerada pela desvalorização (deveria ser valorização, pois é o ganho que esperava ter) da moeda, então pode vender e resultar em uma perda do lucro acumulado
-                    if not compra and dif_preco>sl and (lucro_acum*perda_lucro)/100>dif_preco:
-                        #print('AJUSTE venda \n')
-                        result = ajuste(tradeAPI, instId, preco_atual, sz, clOrdId)
-                        print(result)
+                # subscribe
+                sub_param = {"op": "subscribe", "args": channels}
+                sub_str = json.dumps(sub_param)
+                await ws.send(sub_str)
+                print(f"send: {sub_str}")
+                cont = 0
+                
+                while True:
+                    try:
+                        res = await asyncio.wait_for(ws.recv(), timeout=25)
                         
-                        if result['data'][0]['sMsg'] == 'Your order has already been filled or canceled':
-                            response = segunda_verificacao(tradeAPI, instId,clOrdId)
-                            return response['data'][0]
-                                                    
-                    await ws.send('ping')
-                    await ws.recv()
+                    except (asyncio.TimeoutError, websockets.exceptions.ConnectionClosed) as e:
+                        
+                        try:
+                            await ws.send('ping')
+                            await ws.recv()
 
-                    #print('aqui')
-                    #print(time.time()>time_startback+40)
-                    if time.time()>time_startback+40: # 300 é 5 miin
-                        res = segunda_verificacao(tradeAPI, instId,clOrdId)
-                        time_startback = time.time()
-                        #print("Segunda verificação")
-                        print(res)
-                        return res['data'][0]
+                            tradeAPI = Trade.TradeAPI(api_key, secret_key, passphrase, False, flag)
+                            marketDataAPI =  MarketData.MarketAPI(flag='1')
+                            response = marketDataAPI.get_ticker(
+                                instId=instId
+                            )
+                            preco_atual = float(response['data'][0]['last'])
+                            
+                            dif_max = desvalorizacao*1.8
+                            # Ajustar sl de acordo com o lucro acumulado
+                            sl = valorizacao*1.89 #diferença decimal entre valor presente e valor de venda enviado, caso venda, estarei a dois ciclos de operacao de recuperar
+                            perda_lucro = 0.8 
+                            # Diferença de preço entre o valor venda desejado e o valor de atual
+                            dif_preco = (valor_ordem-preco_atual)/preco_atual
+                            #print(time.time()>time_start+600, time.time(), time.time()>time_start+600)
+  
+                            if compra and abs(dif_preco)>dif_max and time.time()>time_start+600:
+                                #print('AJUSTE compra \n')
+                                order_price = preco_atual*(1-desvalorizacao) #preço de compra
+                                buy = USDT/(float(order_price))
+                                #print(order_price>valor_ordem, order_price, valor_ordem)
+                                if order_price>valor_ordem:
+                                    #print(f'Ajuste compra: {result}')
+                                    res = ajuste(tradeAPI, instId, order_price, buy, clOrdId)
+                                    print(res)
 
-                try:
-                    if not res == 'pong':
-                        print(res)
-                        res = json.loads(res)
-                        #print(res)
-                        res['data'][0]
-                        return res['data'][0]
-                except KeyError:
-                    print('Esperando')
-                    continue
-                except TypeError:
-                    print('Erro de tipo')
-                    continue
-                except IndexError:
-                    if res['msg'] == 'API endpoint request timeout ':
-                        if trocou == False: 
-                            api_key = 'd1c64656-e404-42d7-a962-c850df6035f2'
-                            secret_key = '320DB9091EB16DB2C718BC53A1F5C0F9'
-                            passphrase = 'Segundafrase@1'
-                            trocou = True
-                        else: 
-                            api_key = 'c526a733-e865-49bb-96f8-80efea44bc7b'
-                            secret_key = 'B2E5C73BA075C7B03214B23F7C369BF4'
-                            passphrase = 'Par@negociar1'
-                            trocou = False
-                    continue
+                                    if res['data'][0]['sMsg'] == 'Your order has already been filled or canceled':
+                                        res = segunda_verificacao(tradeAPI, instId,clOrdId)
+                                        return res['data'][0]
+
+                                time_start = time.time()
+
+                            # Se tantos porcentos do lucro(perda_lucro) forem maior que a perda gerada pela desvalorização (deveria ser valorização, pois é o ganho que esperava ter) da moeda, então pode vender e resultar em uma perda do lucro acumulado
+                            # criar um dicionário com as variáveis e seus nomes
+                            dados.append({
+                                "Operacao": clOrdId,
+                                "dif_preco": dif_preco,
+                                "sl": sl,
+                                "lucro_perda": (lucro_acum*perda_lucro)/100,
+                            })
+
+                            # criar um dataframe com o dicionário
+                            df = pd.DataFrame(dados)
+
+                            # salvar o dataframe em um arquivo csv
+                            df.to_csv(f"Venda_antecipada_{par}.csv", index=False)
+
+                            if not compra and dif_preco>sl and (lucro_acum*perda_lucro)/100>sl:
+                                print(valor_ordem, preco_atual)
+                                #print('AJUSTE venda \n')
+                                res = ajuste(tradeAPI, instId, preco_atual, sz, clOrdId)
+                                print(res)
+                                
+                                if res['data'][0]['sMsg'] == 'Your order has already been filled or canceled':
+                                    res = segunda_verificacao(tradeAPI, instId,clOrdId)
+                                    return res['data'][0]                     
 
 
-def verificar_execucao(api_key, passphrase, secret_key, compra, instId, clOrdId, valor_ordem, desvalorizacao, USDT, preco_venda, sz, lucro_acum):
+                            #print('aqui')
+                            #print(time.time()>time_startback+40)
+                            if time.time()>time_startback+40: # 300 é 5 miin
+                                res = segunda_verificacao(tradeAPI, instId,clOrdId)
+                                time_startback = time.time()
+                                #print("Segunda verificação")
+                                print(res)
+                                return res['data'][0]
+                            
+                        except IndexError:
+                            if res['msg'] == 'API endpoint request timeout ':
+                                if trocou == False: 
+                                    api_key = 'd1c64656-e404-42d7-a962-c850df6035f2'
+                                    secret_key = '320DB9091EB16DB2C718BC53A1F5C0F9'
+                                    passphrase = 'Segundafrase@1'
+                                    trocou = True
+                                else: 
+                                    api_key = 'c526a733-e865-49bb-96f8-80efea44bc7b'
+                                    secret_key = 'B2E5C73BA075C7B03214B23F7C369BF4'
+                                    passphrase = 'Par@negociar1'
+                                    trocou = False
+                            continue                            
+
+                    try:
+                        if not res == 'pong':
+                            print(res)
+                            res = json.loads(res)
+                            #print(res)
+                            res['data'][0]
+                            return res['data'][0]
+                    except KeyError:
+                        print('Esperando')
+                        continue
+                    except TypeError:
+                        print('Erro de tipo')
+                        continue
+                    except IndexError:
+                        if res['msg'] == 'API endpoint request timeout ':
+                            if trocou == False: 
+                                api_key = 'd1c64656-e404-42d7-a962-c850df6035f2'
+                                secret_key = '320DB9091EB16DB2C718BC53A1F5C0F9'
+                                passphrase = 'Segundafrase@1'
+                                trocou = True
+                            else: 
+                                api_key = 'c526a733-e865-49bb-96f8-80efea44bc7b'
+                                secret_key = 'B2E5C73BA075C7B03214B23F7C369BF4'
+                                passphrase = 'Par@negociar1'
+                                trocou = False
+                        continue
+
+        except (websockets.exceptions.ConnectionClosed, httpx.ReadTimeout, websockets.exceptions.InvalidMessage, TimeoutError, ConnectionResetError) as e:            
+            continue
+        except IndexError:
+            if res['msg'] == 'API endpoint request timeout ':
+                if trocou == False: 
+                    api_key = 'd1c64656-e404-42d7-a962-c850df6035f2'
+                    secret_key = '320DB9091EB16DB2C718BC53A1F5C0F9'
+                    passphrase = 'Segundafrase@1'
+                    trocou = True
+                else: 
+                    api_key = 'c526a733-e865-49bb-96f8-80efea44bc7b'
+                    secret_key = 'B2E5C73BA075C7B03214B23F7C369BF4'
+                    passphrase = 'Par@negociar1'
+                    trocou = False
+            continue
+
+def verificar_execucao(api_key, passphrase, secret_key, compra, instId, clOrdId, valor_ordem, desvalorizacao, USDT, valorizacao, sz, lucro_acum):
     
     url = "wss://ws.okx.com:8443/ws/v5/private?brokerId=9999"
 
@@ -861,7 +859,7 @@ def verificar_execucao(api_key, passphrase, secret_key, compra, instId, clOrdId,
 
         loop = asyncio.get_event_loop()
 
-        response = loop.run_until_complete(subscribe(url, channels, api_key, passphrase, secret_key, compra, instId, clOrdId, valor_ordem, desvalorizacao, USDT, preco_venda, sz, lucro_acum))
+        response = loop.run_until_complete(subscribe(url, channels, api_key, passphrase, secret_key, compra, instId, clOrdId, valor_ordem, desvalorizacao, USDT, valorizacao, sz, lucro_acum))
         #print(response)
         #try:
             #print('\n', response)
@@ -881,9 +879,9 @@ def verificar_execucao(api_key, passphrase, secret_key, compra, instId, clOrdId,
         
     return response
 
-USDT = 10
-desvalorizacao = 0.006
-valorizacao = 0.009
+USDT = 100
+desvalorizacao = 0.003
+valorizacao = 0.004
 
 par = 'SUI-USDT'
 
