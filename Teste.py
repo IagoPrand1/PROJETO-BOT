@@ -414,7 +414,7 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
             df_registros = pd.DataFrame(registros)
             df_registros.to_csv(f'Registros {par[:3]}.csv')
 
-            trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, order_price, desvalorizacao, USDT, valorizacao, crip_real, lucro_acumulado)
+            trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, order_price, desvalorizacao_usada, valorizacao_usada, USDT, valorizacao_usada, crip_real, lucro_acumulado)
             compra = False
             print(trade)      
 
@@ -458,7 +458,7 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
             df_registros = pd.DataFrame(registros)
             df_registros.to_csv(f'Registros {par[:3]}.csv')
             
-            trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, order_price, desvalorizacao, USDT, valorizacao, crip_real, lucro_acumulado)
+            trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, order_price, desvalorizacao_usada, valorizacao_usada, USDT, valorizacao_usada, crip_real, lucro_acumulado)
             compra = True
             
             preco_venda_real = float(trade['avgPx'])
@@ -730,7 +730,7 @@ async def subscribe(url, channels, api_key, passphrase, secret_key,
                             
                             dif_max = desvalorizacao*1.8
                             # Ajustar sl de acordo com o lucro acumulado
-                            sl = valorizacao*1.89 #diferença decimal entre valor presente e valor de venda enviado, caso venda, estarei a dois ciclos de operacao de recuperar
+                            sl = valorizacao*1.5 #diferença decimal entre valor presente e valor de venda enviado, caso venda, estarei a dois ciclos de operacao de recuperar
                             perda_lucro = 0.8 
                             # Diferença de preço entre o valor venda desejado e o valor de atual
                             dif_preco = (valor_ordem-preco_atual)/preco_atual
@@ -879,11 +879,11 @@ def verificar_execucao(api_key, passphrase, secret_key, compra, instId, clOrdId,
         
     return response
 
-USDT = 100
+USDT = 10
 desvalorizacao = 0.003
 valorizacao = 0.004
 
-par = 'SUI-USDT'
+par = 'ARB-USDT'
 
 print('USDT', USDT, '\n Desvalorização', desvalorizacao, '\n Valorização', valorizacao,'\n')
 
