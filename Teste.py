@@ -371,7 +371,7 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
         print(response)
 
         # ID da ordem. Terminacao m é compra (maker)
-        clOrdId = str(int(time.time()))+par[:3]+'MM'
+        clOrdId = str(int(time.time()))+par[:3]+'MM4'
 
         if compra:
             
@@ -437,7 +437,7 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
         df_registros = pd.DataFrame(registros)
         df_registros.to_csv(f'Registros {par[:3]}.csv')
 
-        clOrdId = str(int(time.time()))+par[:3]+'MT' #final um indica que é o primeiro programa 
+        clOrdId = str(int(time.time()))+par[:3]+'MT4' #final um indica que é o primeiro programa 
         
         df_previsao = previsao(par)
         previsao_direcao = prev_direcao(df_previsao, 'Direcao')
@@ -879,11 +879,11 @@ def verificar_execucao(api_key, passphrase, secret_key, compra, instId, clOrdId,
         
     return response
 
-USDT = 10
+USDT = 100
 desvalorizacao = 0.003
 valorizacao = 0.004
 
-par = 'ARB-USDT'
+par = 'SUI-USDT'
 
 print('USDT', USDT, '\n Desvalorização', desvalorizacao, '\n Valorização', valorizacao,'\n')
 
