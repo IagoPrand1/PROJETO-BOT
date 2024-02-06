@@ -883,7 +883,7 @@ USDT = 100
 desvalorizacao = 0.003
 valorizacao = 0.004
 
-par = 'ARB-USDT'
+par = 'SUI-USDT'
 
 print('USDT', USDT, '\n Desvalorização', desvalorizacao, '\n Valorização', valorizacao,'\n')
 
