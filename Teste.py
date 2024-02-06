@@ -36,7 +36,7 @@ tradeAPI = Trade.TradeAPI(api_key, secret_key, passphrase, False, flag)
 def calcular_indicadores_estatisticos(df):
 
     # Cálculo dos indicadores estatísticos
-    ema = df['Close'].ewm(span=20, adjust=False).mean()  # Média Móvel Exponencial (EMA)
+    ema = df['Close'].ewm(span=2, adjust=False).mean()  # Média Móvel Exponencial (EMA)
     delta = df['Close'].diff()  # Variação do preço
     gain = delta.where(delta > 0, 0)  # Ganho em cada período
     loss = -delta.where(delta < 0, 0)  # Perda em cada período
@@ -98,7 +98,7 @@ def previsao(instId):
     # Retrieve the candlestick charts
     dados_atuais = marketDataAPI.get_candlesticks(
         instId=instId,
-        bar='15m',
+        bar='1m',
         limit = '300'
     )
     dados_atuais = dados_atuais['data']
@@ -458,7 +458,7 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
             df_registros = pd.DataFrame(registros)
             df_registros.to_csv(f'Registros {par[:3]}.csv')
             
-            trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, order_price, desvalorizacao_usada, USDT, valorizacao_usada, crip_real, lucro_acumulado)
+            trade = verificar_execucao(api_key, passphrase, secret_key, compra, par, clOrdId, preco_compra, desvalorizacao_usada, USDT, valorizacao_usada, crip_real, lucro_acumulado)
             compra = True
             
             preco_venda_real = float(trade['avgPx'])
@@ -767,7 +767,7 @@ async def subscribe(url, channels, api_key, passphrase, secret_key,
                             # salvar o dataframe em um arquivo csv
                             df.to_csv(f"Venda_antecipada_{par}.csv", index=False)
 
-                            if not compra and dif_preco>sl and (lucro_acum*perda_lucro)/100>sl:
+                            if not compra and dif_preco>sl and (lucro_acum*perda_lucro)/100>dif_preco:
                                 print(valor_ordem, preco_atual)
                                 #print('AJUSTE venda \n')
                                 res = ajuste(tradeAPI, instId, preco_atual, sz, clOrdId)
@@ -828,7 +828,7 @@ async def subscribe(url, channels, api_key, passphrase, secret_key,
                                 trocou = False
                         continue
 
-        except (websockets.exceptions.ConnectionClosed, httpx.ReadTimeout, websockets.exceptions.InvalidMessage, TimeoutError, ConnectionResetError) as e:            
+        except (websockets.exceptions.ConnectionClosed, httpx.ReadTimeout, websockets.exceptions.InvalidMessage, TimeoutError, ConnectionResetError, httpx.ConnectTimeout) as e:            
             continue
         except IndexError:
             if res['msg'] == 'API endpoint request timeout ':
@@ -883,7 +883,7 @@ USDT = 100
 desvalorizacao = 0.003
 valorizacao = 0.004
 
-par = 'SUI-USDT'
+par = 'ARB-USDT'
 
 print('USDT', USDT, '\n Desvalorização', desvalorizacao, '\n Valorização', valorizacao,'\n')
 
