@@ -25,6 +25,7 @@ import webbrowser
 import os
 
 import httpx
+from socket import gethostbyname, gaierror
 
 api_key = 'c526a733-e865-49bb-96f8-80efea44bc7b'
 secret_key = 'B2E5C73BA075C7B03214B23F7C369BF4'
@@ -189,7 +190,8 @@ def tentativa_compra(instId, px, sz, clOrdI):
             print("Successful order request，order_id = ",result["data"][0]["clOrdId"])
         else:
             # imprime a mensagem de erro
-            print("Unsuccessful order request，error_code = ",result["data"][0]["sCode"], ", Error_message = ", result["data"][0]["sMsg"])
+            print(result)
+            #print("Unsuccessful order request，error_code = ",result["data"][0]["sCode"], ", Error_message = ", result["data"][0]["sMsg"])
         time.sleep(1)
     return result
 
@@ -205,7 +207,8 @@ def tentativa_venda(instId, px, sz, clOrdI):
             print("Successful order request，order_id = ",result["data"][0]["clOrdId"])
         else:
             # imprime a mensagem de erro
-            print("Unsuccessful order request，error_code = ",result["data"][0]["sCode"], ", Error_message = ", result["data"][0]["sMsg"])
+            print(result)
+            #print("Unsuccessful order request，error_code = ",result["data"][0]["sCode"], ", Error_message = ", result["data"][0]["sMsg"])
         time.sleep(1)
     return result
 
@@ -309,7 +312,7 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
     # Inicializar as variáveis de controle
     compra = True # Indica se há uma operação de compra em andamento
     lucro = 0 # Lucro 
-    lucro_acumulado = 1
+    lucro_acumulado = 0.5
     contagem = 0 # Número de operações realizadas
     registros = [] # Lista de registros das operações
     preco_venda_real = 0
@@ -317,6 +320,9 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
     preco_venda = 0
     crip_real = 0
     valor_inicial = USDT
+
+    ganho_total = 0
+    fator_reaplicacao = 0.6
 
     #Parâmetros e variáveis para previsao
     operacao_alta = False #Quando for realizado uma compra esperando alta grande
@@ -339,12 +345,8 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
 
     while True:
 
-        #if lucro_acumulado >= 6.0:
-         #   retorno = USDT - valor_inicial
-          #  livro_retorno.append({"Retorno": retorno})
-           # df_livro_retorno = pd.DataFrame(livro_retorno)
-            #df_livro_retorno.to_csv(f'Retorno {par[:3]}.csv')
-            #USDT = valor_inicial
+        if contagem/12 == int and contagem != 0:
+            USDT = USDT + ganho_total*fator_reaplicacao        
          
         df_previsao = previsao(par)
 
@@ -371,7 +373,7 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
         print(response)
 
         # ID da ordem. Terminacao m é compra (maker)
-        clOrdId = str(int(time.time()))+par[:3]+'MM4'
+        clOrdId = str(int(time.time()))+par[:3]+'MM2'
 
         if compra:
             
@@ -408,7 +410,7 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
 
             hora_conclusao = datetime.utcnow()
             # Registrar a operação de compra
-            registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": tipo_compra, "Status": 'Aberto', "Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado})
+            registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": tipo_compra, "Status": 'Aberto', "Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado, "Saque": ganho_total})
 
             # Criar um dataframe com os registros das operações
             df_registros = pd.DataFrame(registros)
@@ -429,7 +431,7 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
             
             hora_conclusao = datetime.utcnow()
             # Registrar a operação de compra
-            registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": tipo_compra, "Status": 'Fechado', "Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado})
+            registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": tipo_compra, "Status": 'Fechado', "Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado, "Saque": ganho_total})
         
         contagem += 1
 
@@ -437,7 +439,7 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
         df_registros = pd.DataFrame(registros)
         df_registros.to_csv(f'Registros {par[:3]}.csv')
 
-        clOrdId = str(int(time.time()))+par[:3]+'MT4' #final um indica que é o primeiro programa 
+        clOrdId = str(int(time.time()))+par[:3]+'MT2' #final um indica que é o primeiro programa 
         
         df_previsao = previsao(par)
         previsao_direcao = prev_direcao(df_previsao, 'Direcao')
@@ -453,7 +455,7 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
 
             hora_conclusao = datetime.utcnow()
             # Registrar a operação de compra
-            registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": tipo_venda, "Status": 'Aberto',"Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado})
+            registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": tipo_venda, "Status": 'Aberto',"Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado, "Saque": ganho_total})
             # Criar um dataframe com os registros das operações
             df_registros = pd.DataFrame(registros)
             df_registros.to_csv(f'Registros {par[:3]}.csv')
@@ -471,10 +473,16 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
             lucro_acumulado = (USDT_final - valor_inicial)/valor_inicial*100
             USDT = USDT_final
             crip_real = crip_real-qtd_vendida
-            
+
+            #if lucro_acumulado >= 1.9:
+                #ganho = USDT - valor_inicial
+                #ganho_total = ganho_total+ganho
+                #USDT = valor_inicial
+                #lucro_acumulado = 0.5
+
             hora_conclusao = datetime.utcnow()
             # Registrar a operação de compra
-            registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": tipo_venda, "Status": 'Fechado',"Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado})
+            registros.append({"Data": hora_conclusao, "clordID": clOrdId, "Operação": tipo_venda, "Status": 'Fechado',"Preço de compra": preco_compra, "Preço de venda esperado": preco_venda, "Preço venda real": preco_venda_real, "USDT": USDT, f"{par}": crip_real, "Lucro (%)": lucro, "Lucro Acum.(%)": lucro_acumulado, "Saque": ganho_total})
 
         # Criar um dataframe com os registros das operações
         df_registros = pd.DataFrame(registros)
@@ -730,8 +738,8 @@ async def subscribe(url, channels, api_key, passphrase, secret_key,
                             
                             dif_max = desvalorizacao*1.8
                             # Ajustar sl de acordo com o lucro acumulado
-                            sl = valorizacao*1.5 #diferença decimal entre valor presente e valor de venda enviado, caso venda, estarei a dois ciclos de operacao de recuperar
-                            perda_lucro = 0.8 
+                            sl = valorizacao*1.6 #diferença decimal entre valor presente e valor de venda enviado, caso venda, estarei a dois ciclos de operacao de recuperar
+                            perda_lucro = 0.7 
                             # Diferença de preço entre o valor venda desejado e o valor de atual
                             dif_preco = (valor_ordem-preco_atual)/preco_atual
                             #print(time.time()>time_start+600, time.time(), time.time()>time_start+600)
@@ -828,7 +836,7 @@ async def subscribe(url, channels, api_key, passphrase, secret_key,
                                 trocou = False
                         continue
 
-        except (websockets.exceptions.ConnectionClosed, httpx.ReadTimeout, websockets.exceptions.InvalidMessage, TimeoutError, ConnectionResetError, httpx.ConnectTimeout) as e:            
+        except (gaierror, websockets.exceptions.InvalidStatusCode, websockets.exceptions.ConnectionClosed, httpx.ReadTimeout, websockets.exceptions.InvalidMessage, TimeoutError, ConnectionResetError, httpx.ConnectTimeout, httpx.RemoteProtocolError, KeyError) as e:            
             continue
         except IndexError:
             if res['msg'] == 'API endpoint request timeout ':
@@ -880,14 +888,16 @@ def verificar_execucao(api_key, passphrase, secret_key, compra, instId, clOrdId,
     return response
 
 USDT = 100
-desvalorizacao = 0.003
+desvalorizacao = 0.0054
 valorizacao = 0.004
 
-par = 'SUI-USDT'
+par = 'ARB-USDT'
 
 print('USDT', USDT, '\n Desvalorização', desvalorizacao, '\n Valorização', valorizacao,'\n')
 
-#df_desempenho = pd.DataFrame(columns=["Time","Acuracia_(%)","Sensibilidade_(%)","Especificidade_(%)", "AUC"], index=None)
-#df_desempenho.to_csv(f'{par}-Report_de_desempenho_das_previsoes.csv', index=False)
+df_parametros = []
+df_parametros.append({"Par":par, "Desvalorizcao": desvalorizacao, "Valorizcao": valorizacao})
+df_parametros = pd.DataFrame(df_parametros)
+df_parametros.to_csv(f'{par}-Parametros.csv', index=False)
 
 bot(par, USDT, desvalorizacao, valorizacao )
