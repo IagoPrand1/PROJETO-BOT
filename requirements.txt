@@ -1,3 +1,4 @@
+tensorflow[and-cuda]
 async-generator==1.10
 async-timeout==4.0.2
 asyncio==3.4.3
@@ -25,5 +26,3 @@ websockets==10.4
 zipp==3.17.0 
 Flask==2.0.1
 httpx
-nvidia-cudnn-cu11==8.6.0.163
-conda install -c conda-forge cudatoolkit=11.8.0
