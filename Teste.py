@@ -99,7 +99,7 @@ def previsao(instId):
     # Retrieve the candlestick charts
     dados_atuais = marketDataAPI.get_candlesticks(
         instId=instId,
-        bar='1m',
+        bar='5m',
         limit = '300'
     )
     dados_atuais = dados_atuais['data']
@@ -373,7 +373,7 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
         print(response)
 
         # ID da ordem. Terminacao m é compra (maker)
-        clOrdId = str(int(time.time()))+par[:3]+'MM2'
+        clOrdId = str(int(time.time()))+par[:3]+'MM1'
 
         if compra:
             
@@ -439,7 +439,7 @@ def bot(par, USDT, desvalorizacao, valorizacao ):
         df_registros = pd.DataFrame(registros)
         df_registros.to_csv(f'Registros {par[:3]}.csv')
 
-        clOrdId = str(int(time.time()))+par[:3]+'MT2' #final um indica que é o primeiro programa 
+        clOrdId = str(int(time.time()))+par[:3]+'MT1' #final um indica que é o primeiro programa 
         
         df_previsao = previsao(par)
         previsao_direcao = prev_direcao(df_previsao, 'Direcao')
@@ -881,17 +881,24 @@ def verificar_execucao(api_key, passphrase, secret_key, compra, instId, clOrdId,
         if response['state'] == 'filled' and response['clOrdId'] == clOrdId:
             pendente = False
 
-        if response['state'] == 'canceled' and response['clOrdId'] == clOrdId:
+        elif response['state'] == 'canceled' and response['clOrdId'] == clOrdId:
             return 
         
         
     return response
 
-USDT = 100
-desvalorizacao = 0.0054
-valorizacao = 0.004
+CUDNN_PATH=$(dirname $(python -c "import nvidia.cudnn;print(nvidia.cudnn.__file__)"))
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_PREFIX/lib/:$CUDNN_PATH/lib
 
-par = 'ARB-USDT'
+mkdir -p $CONDA_PREFIX/etc/conda/activate.d
+CUDNN_PATH=$(dirname $(python -c "import nvidia.cudnn;print(nvidia.cudnn.__file__)"))
+echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_PREFIX/lib/:$CUDNN_PATH/lib' > $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
+
+USDT = 100
+desvalorizacao = 0.006
+valorizacao = 0.0043
+
+par = 'STX-USDT'
 
 print('USDT', USDT, '\n Desvalorização', desvalorizacao, '\n Valorização', valorizacao,'\n')
 
