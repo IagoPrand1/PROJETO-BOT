@@ -27,6 +27,8 @@ import os
 import httpx
 from socket import gethostbyname, gaierror
 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
 api_key = 'c526a733-e865-49bb-96f8-80efea44bc7b'
 secret_key = 'B2E5C73BA075C7B03214B23F7C369BF4'
 passphrase = 'Par@negociar1'
@@ -886,13 +888,6 @@ def verificar_execucao(api_key, passphrase, secret_key, compra, instId, clOrdId,
         
         
     return response
-
-CUDNN_PATH=$(dirname $(python -c "import nvidia.cudnn;print(nvidia.cudnn.__file__)"))
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_PREFIX/lib/:$CUDNN_PATH/lib
-
-mkdir -p $CONDA_PREFIX/etc/conda/activate.d
-CUDNN_PATH=$(dirname $(python -c "import nvidia.cudnn;print(nvidia.cudnn.__file__)"))
-echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_PREFIX/lib/:$CUDNN_PATH/lib' > $CONDA_PREFIX/etc/conda/activate.d/env_vars.sh
 
 USDT = 100
 desvalorizacao = 0.006
