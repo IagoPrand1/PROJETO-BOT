@@ -25,6 +25,5 @@ websockets==10.4
 zipp==3.17.0 
 Flask==2.0.1
 httpx
-cudatoolkit==11.8.0
 nvidia-cudnn-cu11==8.6.0.163
-
+conda install -c conda-forge cudatoolkit=11.8.0
