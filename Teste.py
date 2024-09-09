@@ -801,13 +801,13 @@ async def subscribe(url, channels, api_key, passphrase, secret_key,
                             if res['msg'] == 'API endpoint request timeout ':
                                 if trocou == False: 
                                     api_key = 'd1c64656-e404-42d7-a962-c850df6035f2'
-                                    secret_key = '320DB9091EB16DB2C718BC53A1F5C0F9'
-                                    passphrase = 'Segundafrase@1'
+                                    secret_key = ''
+                                    passphrase = ''
                                     trocou = True
                                 else: 
                                     api_key = 'c526a733-e865-49bb-96f8-80efea44bc7b'
-                                    secret_key = 'B2E5C73BA075C7B03214B23F7C369BF4'
-                                    passphrase = 'Par@negociar1'
+                                    secret_key = ''
+                                    passphrase = ''
                                     trocou = False
                             continue                            
 
@@ -828,13 +828,13 @@ async def subscribe(url, channels, api_key, passphrase, secret_key,
                         if res['msg'] == 'API endpoint request timeout ':
                             if trocou == False: 
                                 api_key = 'd1c64656-e404-42d7-a962-c850df6035f2'
-                                secret_key = '320DB9091EB16DB2C718BC53A1F5C0F9'
-                                passphrase = 'Segundafrase@1'
+                                secret_key = ''
+                                passphrase = 
                                 trocou = True
                             else: 
                                 api_key = 'c526a733-e865-49bb-96f8-80efea44bc7b'
-                                secret_key = 'B2E5C73BA075C7B03214B23F7C369BF4'
-                                passphrase = 'Par@negociar1'
+                                secret_key = ''
+                                passphrase = 
                                 trocou = False
                         continue
 
@@ -844,13 +844,13 @@ async def subscribe(url, channels, api_key, passphrase, secret_key,
             if res['msg'] == 'API endpoint request timeout ':
                 if trocou == False: 
                     api_key = 'd1c64656-e404-42d7-a962-c850df6035f2'
-                    secret_key = '320DB9091EB16DB2C718BC53A1F5C0F9'
-                    passphrase = 'Segundafrase@1'
+                    secret_key = ''
+                    passphrase = ''
                     trocou = True
                 else: 
                     api_key = 'c526a733-e865-49bb-96f8-80efea44bc7b'
-                    secret_key = 'B2E5C73BA075C7B03214B23F7C369BF4'
-                    passphrase = 'Par@negociar1'
+                    secret_key = ''
+                    passphrase = ''
                     trocou = False
             continue
 
